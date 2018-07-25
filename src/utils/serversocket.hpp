@@ -1,4 +1,5 @@
-#include<iostream>
+#pragma once
+//#include<iostream>
 #include<cstdlib>
 #include<string>
 #include<cstring>
@@ -25,20 +26,18 @@ class ServSocket{
         ServSocket();
         ~ServSocket();
         bool Socket(int port,string ip_addr);
+        bool Accept();
         bool Send(string sendbuf,int len);
         bool Recv(string recvbuf,int len,int timeout);
-        int getconnfd();
         int getsockfd();
-        bool Accept();
-
+        
     private:
         string ip;
         int port;
         int sockfd;
-        int connfd;
         struct sockaddr_in servaddr,cliaddr;
         bool Close();
-        bool Setnonblock(int fd);
+        bool Setnonblock(void);
         bool Setoptions(int option,int value);
 };
 ServSocket::ServSocket():port(0),sockfd(-1),connfd(-1)
@@ -66,16 +65,17 @@ bool ServSocket::Close()
     return true;
     
 }
-bool ServSocket::Setnonblock(int fd)
+bool ServSocket::Setnonblock(void)
 {
-    if(fd!=-1)
-    {
-        int old_option = fcntl(fd,F_GETFL);
+	if(sockfd)
+	{
+		int old_option = fcntl(fd,F_GETFL);
         int new_option = old_option | O_NONBLOCK;
         fcntl(fd,F_SETFL,new_option);
         return true;
-    }
-    return false;
+	}
+	return false;
+
 }
 bool ServSocket::Setoptions(int option,int value)
 {
@@ -175,10 +175,6 @@ bool ServSocket::Recv(string recvbuf,int len,int timeout)
         read_index += byte_read;
     }
     return read_index == len;
-}
-int  ServSocket::getconnfd()
-{
-    return connfd;
 }
 int  ServSocket::getsockfd()
 {

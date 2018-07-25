@@ -1,3 +1,4 @@
+#pragma once
 #include<cstdio>
 void my_err(char * str,int line)
 {
