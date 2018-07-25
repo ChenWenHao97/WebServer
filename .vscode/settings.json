@@ -38,6 +38,11 @@
         "tuple": "cpp",
         "typeinfo": "cpp",
         "utility": "cpp",
-        "iostream": "cpp"
-    }
+        "iostream": "cpp",
+        "cstring": "cpp",
+        "cmath": "cpp",
+        "optional": "cpp",
+        "string_view": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
