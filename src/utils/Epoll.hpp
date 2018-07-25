@@ -13,6 +13,7 @@ class Epoll{
         bool Addevent(ServSocket *socket,bool oneshot);
         bool Deletevent(ServSocket *socket);
         int Waitevent(void);
+        epoll_event * getevents(void);
         struct epoll_event events[MAX_EVENT_NUMBER];
     private:
         int epfd;
@@ -47,10 +48,10 @@ bool Epoll::Addevent(ServSocket *socket,bool oneshot)
     }
     epoll_event event;
     event.data.fd = sockfd;
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
+    event.event = EPOLLIN | EPOLLET | EPOLLRDHUP;
     if(oneshot)
     {
-        event.events |= EPOLLONESHOT;
+        event.event |= EPOLLONESHOT;
     }
    return ( epoll_ctl(epfd,EPOLL_CTL_ADD,sockfd,&event) == 0);
 
@@ -67,10 +68,14 @@ bool Epoll::Deletevent(ServSocket *socket)
     close(sockfd);
 
     return res;
-    
+
 }
 int Epoll::Waitevent(void)
 {
     int ret = epoll_wait(epfd,events,MAX_EVENT_NUMBER,-1);
     return ret;
+}
+epoll_event * Epoll::getevents(void)
+{
+    return events;
 }

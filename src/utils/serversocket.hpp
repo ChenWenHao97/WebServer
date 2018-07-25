@@ -24,17 +24,20 @@ using namespace std;
 class ServSocket{
     public:
         ServSocket();
+        ServSocket(int fd): sockfd(fd) {}
         ~ServSocket();
         bool Socket(int port,string ip_addr);
         bool Accept();
         bool Send(string sendbuf,int len);
         bool Recv(string recvbuf,int len,int timeout);
         int getsockfd();
+        int getconnfd();
         
     private:
         string ip;
         int port;
         int sockfd;
+        int connfd;
         struct sockaddr_in servaddr,cliaddr;
         bool Close();
         bool Setnonblock(void);
@@ -180,4 +183,9 @@ int  ServSocket::getsockfd()
 {
     return sockfd;
 }
+int  ServSocket::getcnnfd()
+{
+    return connfd;
+}
+
 
