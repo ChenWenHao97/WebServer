@@ -28,20 +28,22 @@ class ServSocket{
         ~ServSocket();
         bool Socket(int port,string ip_addr);
         bool Accept();
-        bool Send(string sendbuf,int len);
-        bool Recv(string recvbuf,int len,int timeout);
+        bool Send(const char * sendbuf,int len);
+        bool Recv(char* recvbuf,int len,int timeout);
         int getsockfd();
         int getconnfd();
-        
+        bool Setnonblock(bool is);
+        bool Closeserv(void);
+        bool Closeclient(void);
+        bool Setoptions(int option,int value);
+        bool Setconnfd(int fd);
     private:
         string ip;
         int port;
         int sockfd;
         int connfd;
         struct sockaddr_in servaddr,cliaddr;
-        bool Close();
-        bool Setnonblock(void);
-        bool Setoptions(int option,int value);
+      
 };
 ServSocket::ServSocket():port(0),sockfd(-1),connfd(-1)
 {
@@ -49,34 +51,47 @@ ServSocket::ServSocket():port(0),sockfd(-1),connfd(-1)
 }
 ServSocket::~ServSocket()
 {
-    if(!Close())
+    if(!Closeserv())
     {
         my_err("close err",__LINE__);
     }
 }
-bool ServSocket::Close()
+bool ServSocket::Closeclient()
 {
     if(connfd!=-1)
         close(connfd);
     else 
         return false;
-    if(sockfd!=-1)
-        close(sockfd);
-    else 
-        return false;
-    sockfd = connfd = port = -1;
     return true;
     
 }
-bool ServSocket::Setnonblock(void)
+bool ServSocket::Closeserv(void)
 {
-	if(sockfd)
+     if(sockfd!=-1)
+        close(sockfd);
+    else 
+        return false;
+    
+    connfd = sockfd = port =-1;
+
+    return true;
+}
+bool ServSocket::Setnonblock(bool is)
+{
+	if(!is)//listenfd
 	{
-		int old_option = fcntl(fd,F_GETFL);
+		int old_option = fcntl(sockfd,F_GETFL);
         int new_option = old_option | O_NONBLOCK;
-        fcntl(fd,F_SETFL,new_option);
+        fcntl(sockfd,F_SETFL,new_option);
         return true;
 	}
+    else //connfd
+    {
+        int old_option = fcntl(connfd,F_GETFL);
+        int new_option = old_option | O_NONBLOCK;
+        fcntl(connfd,F_SETFL,new_option);
+        return true;
+    }
 	return false;
 
 }
@@ -85,7 +100,7 @@ bool ServSocket::Setoptions(int option,int value)
     bool res = false;
     if(sockfd!=-1)
     {
-        res = setsockopt(sockfd,SOL_SOCKET,option,(const void *)value,sizeof(value));
+        res = setsockopt(sockfd,SOL_SOCKET,option,(const void *)&value,sizeof(value));
         //只要value为1，之后设置so_reuseaddr,就不会造成time_wait状态
     }
     return true;
@@ -136,21 +151,21 @@ bool ServSocket::Accept()
 
 }
 
-bool ServSocket::Send(string sendbuf,int len)
+bool ServSocket::Send(const char* sendbuf,int len)
 {
-    if(sockfd < 0 || sendbuf="" || len < 0)
+    if(sockfd < 0 || sendbuf=="" || len < 0)
         return false;
     int left = len,total = 0,res = 0;
     while(left > 0)
     {
-        res = send(sockfd,sendbuf.c_str()+total,left,0);
-        if(ret < 0)
+        res = send(sockfd,sendbuf+total,left,0);
+        if(res < 0)
 		{
 			if(errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			{
                 my_err("send failed",__LINE__);
 				usleep(3000);//3秒
-				ret = 0;
+				res = 0;
 			}
 		}
         total += res;
@@ -158,15 +173,15 @@ bool ServSocket::Send(string sendbuf,int len)
     }
     return total == len;
 }
-bool ServSocket::Recv(string recvbuf,int len,int timeout)
+bool ServSocket::Recv(char* recvbuf,int len,int timeout)
 {
-    if(sockfd == -1 || recvbuf == ""||len < 0)
+    if(connfd == -1 || recvbuf == ""||len < 0)
         return false;
     int read_index = 0,byte_read = -1;
 
     while(read_index!=len)
     {
-        byte_read = recv(sockfd,recvbuf.c_str()+read_index,len-read_index,0);
+        byte_read = recv(connfd,recvbuf+read_index,len-read_index,0);
         if(byte_read ==-1)
         {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -183,9 +198,12 @@ int  ServSocket::getsockfd()
 {
     return sockfd;
 }
-int  ServSocket::getcnnfd()
+int  ServSocket::getconnfd()
 {
     return connfd;
 }
-
+bool ServSocket::Setconnfd(int fd)
+{
+    connfd = fd;
+}
 

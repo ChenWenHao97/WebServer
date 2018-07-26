@@ -48,7 +48,6 @@ class threadpool{
                                 return;
 
                             task = move((this->tasks).front());
-                            //task = (this->tasks).front();
                             (this->tasks).pop();
 
                             free_thread_num--;
@@ -72,6 +71,7 @@ class threadpool{
 
         }
 
+
         template<class Function ,class ... Args>
         auto append(Function&& f,Args&& ... args) ->future<decltype(f(args...))>
         {
@@ -81,11 +81,13 @@ class threadpool{
             auto task = make_shared<packaged_task<T()> >(
                 //返回智能指针
                 //T只是返回值，（）代表不需要额外参数，变参必须都给
+
                 bind(forward<Function>(f),forward<Args>(args)...)
                 //参数预绑定，同时不改变左右值
                 //相当于提前给了一个参数
 
             );
+            fprintf(stderr, "before threadpool append");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             future<T> future_results = task->get_future();
             {
                 unique_lock<mutex> lock(m_lock);
@@ -96,9 +98,8 @@ class threadpool{
                 );
             }
             condition.notify_one();//唤醒一个线程去执行
-
+fprintf(stderr, "threadpool append emplaced ok");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             return future_results;
-
         }
 
         int threadcount()

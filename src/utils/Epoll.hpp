@@ -39,40 +39,52 @@ Epoll::~Epoll()
 bool Epoll::Addevent(ServSocket *socket,bool oneshot)
 {
     int sockfd = -1;
-    if(socket->Setnonblock())
-        sockfd = socket->getsockfd();
+    if(socket->Setnonblock(oneshot))
+    {
+        if(oneshot)
+            sockfd = socket->getconnfd();
+        else 
+        {
+            sockfd = socket->getsockfd();
+            cout <<"get socketfd,add event"<<endl;////////////
+        }
+    }
+    
     if(sockfd < 0)
     {
         my_err("add epollevent failed",__LINE__);
         return false;
     }
-    epoll_event event;
+
+    struct epoll_event event;
     event.data.fd = sockfd;
-    event.event = EPOLLIN | EPOLLET | EPOLLRDHUP;
+    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
     if(oneshot)
     {
-        event.event |= EPOLLONESHOT;
+        event.events |= EPOLLONESHOT;
     }
    return ( epoll_ctl(epfd,EPOLL_CTL_ADD,sockfd,&event) == 0);
 
 }
 bool Epoll::Deletevent(ServSocket *socket)
 {
-    int sockfd = socket->getsockfd();
-    if(sockfd < 0)
+    int connfd = socket->getconnfd();
+    if(connfd < 0)
     {
         my_err("delet epollevent failed",__LINE__);
         return false;
     }
-    bool res =  (epoll_ctl(epfd,EPOLL_CTL_DEL,sockfd,0) == 0);
-    close(sockfd);
+    bool res =  (epoll_ctl(epfd,EPOLL_CTL_DEL,connfd,0) == 0);
+    close(connfd);
 
     return res;
 
 }
 int Epoll::Waitevent(void)
 {
+    cout <<"after get in waitevent"<<endl;////////////
     int ret = epoll_wait(epfd,events,MAX_EVENT_NUMBER,-1);
+    cout <<"after epoll wait "<<endl;////////////
     return ret;
 }
 epoll_event * Epoll::getevents(void)
