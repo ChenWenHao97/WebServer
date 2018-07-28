@@ -4,21 +4,34 @@
 #include"../utils/threadpool.hpp"
 #include"../utils/Epoll.hpp"
 #include"../utils/task.hpp"
+#include<unordered_map>
 #define PORT 8080
 #define IP "127.0.01"
+unordered_map<std::string, std::string> MimeTypes;
+void initMimetypeMap() {
+    FILE *fp = fopen("mimetypes.txt", "r");
 
+    do {
+        char key[20], value[50];
+        fscanf(fp, " %s %s", key, value);
+        MimeTypes[key] = value;
+    } while (!feof(fp));
+
+    fclose(fp);
+}
 class test{
 
 };
 using namespace std;
 int main(int argc,char *argv[])
 {
+
     if(argc != 3)
     {
         cout <<"usage :"<<argv[0]<<"port"<<endl;
         return 1;
     }
-
+    initMimetypeMap();
     ServSocket socket_object;
    
 
