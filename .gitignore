@@ -1,2 +1,5 @@
 *.out
 .vscode/*
+*.MP3
+*.gif
+*.png

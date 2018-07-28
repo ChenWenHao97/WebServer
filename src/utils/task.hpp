@@ -15,12 +15,15 @@
 #include"serversocket.hpp"
 #include"my_err.hpp"
 #include<sstream>
+#include <unordered_map>
 using namespace std;
+extern unordered_map<std::string, std::string> MimeTypes;
 
 string PATH("/home/cwh/WebServer/src/wwwroot");
 //默认wwwroot为根
+
 string ok_200_title = "OK";
-sting error_400_title = "Bad Request";
+string error_400_title = "Bad Request";
 string error_400_form = "Your request has bad syntax or is inherently impossible to satisfy.\n";
 string error_403_title = "Forbidden";
 string error_403_form = "You do not have permission to get file from this server.\n";
@@ -29,6 +32,11 @@ string error_404_form = "thr requested file was not found on this server.\n";
 string error_500_title = "Internal Error";
 string error_500_form = "There was an unusal problem serving the requested file.\n";
 
+int endsWith(string s,string sub)//从尾部开始查找
+{
+    return s.rfind(sub)==(s.length()-sub.length())?1:0;
+    //长字符串减去短字符串就是对应的索引，从右边开始查找
+}
 class task{
     private:
         int connfd;
@@ -38,14 +46,10 @@ class task{
         }
 
         task(ServSocket &oth): connfd(oth.getconnfd()) {}
-        ~task(){
-        }
-        void response(string message,int status);
-        void response_file(int size,int status);
-        void response_get(string filename);
+        void response(string message,string status_title,int status,int size,string content_type);
+        void response_get(string filename,string content_type);
         void response_post(string filename);
-        // void doit(void);//解析请求头
-        void operator()();
+        void operator()();//请求头
         string filename;
         string method;
         string version;
@@ -64,8 +68,42 @@ void task::operator()()
         buf >> method;
         buf >> filename;
 
+
+        // cout <<"temp is :"<<temp<<endl;
         cout << "read method is:"<<method<<endl;/////////////////
         cout << "read filename is:"<<filename<<endl;/////////////////
+    
+        string all = filename;
+        string content_type = "text/html";
+     
+        for (auto &i: MimeTypes) 
+        {
+            if (endsWith(all, i.first)) 
+            {
+                content_type = i.second;
+                break;
+            }
+        }
+        // if(endsWith(all,".mp3")) 
+        // {
+        //     content_type = "audio/mp3";
+        // }
+        // else if(endsWith(all,".mp4"))
+        // {
+        //     content_type = "video/mpeg4";
+        // }
+        // else if(endsWith(all,".jpg"))
+        // {
+        //     content_type = "image/jpeg";
+        // }
+        // else if(endsWith(all,".png"))
+        // {
+        //     content_type = "image/png";
+        // }
+        // else if(endsWith(all,""))
+        
+        int type_index = all.find("Content-Type");//要找到需要的类型
+        type_index +=12;
         if(method.compare("GET")==0) 
         {
         //  GET /19011.html HTTP/1.1
@@ -77,7 +115,7 @@ void task::operator()()
         //  Accept-Encoding: gzip, deflate
         //  Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
-            response_get(filename);
+            response_get(filename,content_type);
         }
         else if(method.find("POST")!=string::npos)//先不写
         {
@@ -87,9 +125,7 @@ void task::operator()()
             Content-Length: 35 
             username=wantsoft&password=password //post的数据 */
 
-            string all = temp;
-            // all << temp;
-            int index = all.find("Content-Length");
+            int length_index = all.find("Content-Length");
 
         }
         else //未知的方法
@@ -106,42 +142,47 @@ void task::operator()()
         close(connfd);
 
 }
-void task::response(string message,int status)
+void task::response(string message,string status_title,int status,int size,string content_type)
 {
+
     string buf = "HTTP/1.1 ";
-    buf += to_string(status)+" \r\nConnection: Close\r\n"  
-		+"content-length:"+ to_string(message.size()) + "\r\n\r\n";
-    buf += message;
-	write(connfd, buf.c_str(), buf.size());
-}
-void task::response_file(int size,int status)
-{
-    string buf = "HTTP/1.1 ";
-    buf += to_string(status) + " OK\r\nConnection: Close\r\n"
+    buf += to_string(status) + " "+status_title+"\r\nConnection: Close\r\n"
 		+ "content-length:" + to_string(size) + "\r\nContent-Type: "
-        +  "text/html" +"\r\n\r\n";
+        + content_type +"\r\n\r\n";
+    // buf += message;可以直接将内容发过去，不需要再sendfile
+    cout <<"response size:"<< size<<endl;
 	write(connfd, buf.c_str(), buf.size());//先将html发送过去
 }
-void task::response_get(string filename)
+// void task::response_file(int size,int status)
+// {
+//     string buf = "HTTP/1.1 ";
+//     buf += to_string(status) + " "+status_title+"\r\nConnection: Close\r\n"
+// 		+ "content-length:" + to_string(size) + "\r\nContent-Type: "
+//         + content_type +"\r\n\r\n";
+// 	write(connfd, buf.c_str(), buf.size());//先将html发送过去
+// }
+void task::response_get(string filename,string content_type)
 {
+
+    cout <<"content_type:"<<content_type<<endl;////////////s
     string full_path;
     full_path = PATH;
+    int status = 200;//初始化状态码200
+
     //http://www.google.com/search?hl=en&q=httpclient&btnG=Google+Search&aq=f&oq=
     //动态网页
     bool is_dynamic = false;//网页是否是动态，加没加？
     string argvs;
-    int index = -1;
+    int dynamic_index = -1;
 
-    index = filename.find("?");
-    if(index != -1)//动态网页
+    dynamic_index = filename.find("?");
+    if(dynamic_index != -1)//动态网页
     {
-        argvs = filename.substr(index+1);//一直到尾部
+        argvs = filename.substr(dynamic_index+1);//一直到尾部
         is_dynamic = true;
     }
-    // if(filename.compare("/")==0)
-        full_path += "/index.html";
-    // else  
-    //     full_path += filename;
+
+        full_path += filename;
     
     cout << "full_path is:"<<full_path<<endl;//////////////..
 
@@ -149,24 +190,10 @@ void task::response_get(string filename)
     int ret = stat(full_path.c_str(),&filestat);//判断文件
     if(ret < 0 || S_ISDIR(filestat.st_mode))//文件不存在
     {
-        string no_exit_file;
-        // no_exit_file = "<html><title>Tinyhttpd Error</title>
-        //                 <body>\r\n
-	    //                     404\r\n
-		//                 <p>GET: Can't find the file
-		//             <hr><h3>The Tiny Web Server<h3></body>";
-        no_exit_file = 
-R"(<html>
-    <head>
-        <meta http-equiv="content-type" content="text/html;charset=utf-8">
-    </head>
-    <body>
-        <p>
-            <img src="404.jpg" width="75%" height="75%">
-        </p>
-    </body>
-</html>)";
-        response(full_path,404);
+        full_path = PATH + "/404.html";//只需要将状态改变即可
+        stat(full_path.c_str(), &filestat);
+        status = 404;
+  
     }
     if(is_dynamic)
     {
@@ -180,13 +207,8 @@ R"(<html>
     else  
     {
         cout <<"get in sendfile"<<endl;/////////////
-        // int changedir = chdir(full_path.c_str());
-        // if(changedir == -1)
-        // {
-        //     my_err("change dir failed",__LINE__);
-        // }
-        // cout <<"current dir is :"<<getcwd(NULL,0)<<endl;
         int filefd = open(full_path.c_str(),O_RDONLY);
+        cout <<"file:size->"<<filestat.st_size<<endl;//////////////
         if(filefd < 0)
         {
             my_err("open full_path failed",__LINE__);
@@ -194,9 +216,17 @@ R"(<html>
         }
         else
         {
-            response_file(filestat.st_size,200);//文件的大小和状态码
-            sendfile(connfd,filefd,0,filestat.st_size);//0拷贝发送文件，减少不必要的系统调用
+            response(full_path,ok_200_title,status,filestat.st_size,content_type);//文件的大小和状态码
+
+            ssize_t sended = 0;
+            while (sended != filestat.st_size) 
+            {
+                sended += sendfile(connfd,filefd,&sended,filestat.st_size - sended);
+            }
+            //0拷贝发送文件，减少不必要的系统调用
+            cout << "[SENDED] " << sended << "bytes\n";
         }
+        close(filefd);
     }
 
 

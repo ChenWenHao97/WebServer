@@ -46,7 +46,6 @@ bool Epoll::Addevent(ServSocket *socket,bool oneshot)
         else 
         {
             sockfd = socket->getsockfd();
-            // cout <<"get socketfd,add event"<<endl;////////////
         }
     }
     
@@ -82,9 +81,8 @@ bool Epoll::Deletevent(ServSocket *socket)
 }
 int Epoll::Waitevent(void)
 {
-    // cout <<"after get in waitevent"<<endl;////////////
     int ret = epoll_wait(epfd,events,MAX_EVENT_NUMBER,-1);
-    // cout <<"after epoll wait "<<endl;////////////
+
     return ret;
 }
 epoll_event * Epoll::getevents(void)

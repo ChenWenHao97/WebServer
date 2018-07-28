@@ -1,4 +1,5 @@
-// #include<iostream>
+//半同步半异步线程池，有主线程(epoll等)
+//领导者追随者没有主线程
 #pragma once
 #include <vector>
 #include <queue>

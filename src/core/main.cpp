@@ -9,7 +9,7 @@
 #define IP "127.0.01"
 unordered_map<std::string, std::string> MimeTypes;
 void initMimetypeMap() {
-    FILE *fp = fopen("mimetypes.txt", "r");
+    FILE *fp = fopen("../protocol/content_type.txt", "r");
 
     do {
         char key[20], value[50];
@@ -32,6 +32,7 @@ int main(int argc,char *argv[])
         return 1;
     }
     initMimetypeMap();
+    std::cout << 1 <<endl;
     ServSocket socket_object;
    
 
@@ -80,7 +81,7 @@ int main(int argc,char *argv[])
                 // {
                     // task *ta = new task(socket_object.getconnfd());
                     // ta();
-                    pool.append(task(socket_object));
+                    pool.append(task(&socket_object));
                         // [] (task a) { a.doit(); },
                         // task(socket_object));
                     // pool.append(ta);
@@ -99,7 +100,6 @@ int main(int argc,char *argv[])
     }
     //析构函数关epollfd
     socket_object.Closeserv();
-   //怎么删除线程池?,析构函数？/////////////////////////
 
     return 0;
 }
