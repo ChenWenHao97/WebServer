@@ -23,19 +23,16 @@ int main(int argc,char *argv[])
    
 
     threadpool pool(20);//线程池
-    cout <<"after pool"<<endl;////////////
     int port = atoi(argv[2]);
     string ip = argv[1];
     socket_object.Socket(port,ip);
-    cout <<"after socket"<<endl;////////////
     Epoll epoll_object(1000);
-    cout <<"after epoll"<<endl;////////////
     bool a = epoll_object.Addevent(&socket_object,false);
-    cout <<"after epoll add socket#####" << (a?"true":"false") <<endl;////////////
+
     while(true)
     {
         int number = epoll_object.Waitevent();
-        cout <<"epoll_wait number is :"<<number<<endl;//////////
+  
         if(number < 0 && errno != EINTR)
         {
             my_err("get epoll number failed",__LINE__);
@@ -61,12 +58,10 @@ int main(int argc,char *argv[])
             }
             else if((epoll_object.getevents())[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
-                fprintf(stderr, "CLOSE CONNECTION");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 socket_object.Closeclient();
             }
             else if((epoll_object.getevents())[i].events & EPOLLIN)//读
             {
-                fprintf(stderr, "EPOLLIN");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 // char *RECVBUF = new char[1000];
                 // if(socket_object.Recv(RECVBUF,1000,-1))
                 // {
@@ -91,7 +86,7 @@ int main(int argc,char *argv[])
     }
     //析构函数关epollfd
     socket_object.Closeserv();
-   //怎么删除线程池
+   //怎么删除线程池?,析构函数？/////////////////////////
 
     return 0;
 }

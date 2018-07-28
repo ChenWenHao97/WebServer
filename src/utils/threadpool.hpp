@@ -48,6 +48,7 @@ class threadpool{
                                 return;
 
                             task = move((this->tasks).front());
+                            //无论队列数据是什么参数，都可以取出来进行执行
                             (this->tasks).pop();
 
                             free_thread_num--;
@@ -87,7 +88,7 @@ class threadpool{
                 //相当于提前给了一个参数
 
             );
-            fprintf(stderr, "before threadpool append");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            // fprintf(stderr, "before threadpool append");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             future<T> future_results = task->get_future();
             {
                 unique_lock<mutex> lock(m_lock);
@@ -98,7 +99,7 @@ class threadpool{
                 );
             }
             condition.notify_one();//唤醒一个线程去执行
-fprintf(stderr, "threadpool append emplaced ok");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            // fprintf(stderr, "threadpool append emplaced ok");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             return future_results;
         }
 
