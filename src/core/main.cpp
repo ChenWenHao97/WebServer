@@ -5,21 +5,21 @@
 #include"../utils/Epoll.hpp"
 #include"../utils/task.hpp"
 #include<unordered_map>
-
-unordered_map<std::string, std::string> MimeTypes;
-void initMimetypeMap()
+using namespace std;
+unordered_map<string, string> ContentTypes;
+void initContenttypeMap()
  {
     FILE *fp = fopen("../protocol/content_type.txt", "r");
 
     do {
         char key[20], value[50];
         fscanf(fp, " %s %s", key, value);
-        MimeTypes[key] = value;
+        ContentTypes[key] = value;
     } while (!feof(fp));
 
     fclose(fp);
 }
-using namespace std;
+
 int main(int argc,char *argv[])
 {
 
@@ -28,7 +28,7 @@ int main(int argc,char *argv[])
         cout <<"usage :"<<argv[0]<<"port"<<endl;
         return 1;
     }
-    initMimetypeMap();
+    initContenttypeMap();
     std::cout << 1 <<endl;
     ServSocket socket_object;
    

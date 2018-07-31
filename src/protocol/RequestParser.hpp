@@ -8,7 +8,7 @@ class HttpRequestParser{
         http_parser parser;
         HttpRequest result;
         http_parser_settings settings;
-        byte buf;
+        byte *buf;
 
         int MessageBegincb(http_parser * parser)//消息开始
         {
@@ -77,7 +77,7 @@ class HttpRequestParser{
             return 0;
         }
     public:
-        HttpRequestParser(byte b):bug(b)
+        HttpRequestParser(byte *b):buf(*b)
         {
             http_parser_init(this->parser,::HTTP_REQUEST);
             this->parser.data = &this->result;

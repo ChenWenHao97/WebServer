@@ -102,6 +102,7 @@ class HttpRequest{
             return body_length;
         }
 };
+
 class HttpRespnse{
     private:
         HttpVersion version;
@@ -109,7 +110,34 @@ class HttpRespnse{
         unorder_map<string,string> key_value;
         shared_ptr<byte> body;//body有不需要的内容，只需要转发给CGI
         int body_length;
+        // body_stream;
+        // body_fd;
     public:
+        HttpRespnse(HttpRequest &req) 
+        {
+            this->version = req.GetVersion();
+            // openfd...
+            // set status code
+            // fd
+            // key_Value
+
+        }
+
+        void sendTo(socket skt)
+        {
+            skt.send("HTTP/1.1 ");
+            skt.send(status TOSTRING..);
+            skt.send(" DESC\r\n");
+            for (auto &i: key_value) {
+                skt.send(i.first);
+                skt.send(": ");
+                skt.send(i.second "\r\n");
+            }
+            skt.send('\r\n');
+            sendfile();
+            skt.send(body);
+        }
+
         void Setkeyvalue(string key,string value)
         {
             this->key_value.emplace(key,value);
