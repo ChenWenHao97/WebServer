@@ -116,11 +116,7 @@ class HttpRespnse{
         HttpRespnse(HttpRequest &req) 
         {
             this->version = req.GetVersion();
-            // openfd...
-            // set status code
-            // fd
-            // key_Value
-
+            this->status = req.GetStatus(); 
         }
 
         void sendTo(socket skt)

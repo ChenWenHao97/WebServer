@@ -36,7 +36,7 @@ class task{
         }
         task(ServSocket &oth): connfd(oth.getconnfd()) {}
         void response(string message,string status_title,int status,int size,string content_type);
-        void response_get(string filename,string content_type);
+        void response_get(string filename,string content_type,HttpRequest req);
         void response_post(string filename);
         void operator()();//请求头
         string filename;
@@ -63,7 +63,7 @@ void task::operator()()
         }
         else if(method.find("POST")!=string::npos)//找不到的情况下返回npos,先不写
         {
-            
+            response_post(filename,content_type);
 
         }
         else //未知的方法
@@ -92,7 +92,7 @@ void task::response(string message,string status_title,int status,int size,strin
 	write(connfd, buf.c_str(), buf.size());//先将html发送过去
 }
 
-void task::response_get(string filename,string content_type)
+void task::response_get(string filename,string content_type,HttpRequest req)
 {
 
     cout <<"content_type:"<<content_type<<endl;////////////s
