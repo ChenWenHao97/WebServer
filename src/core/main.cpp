@@ -5,10 +5,10 @@
 #include"../utils/Epoll.hpp"
 #include"../utils/task.hpp"
 #include<unordered_map>
-#define PORT 8080
-#define IP "127.0.01"
+
 unordered_map<std::string, std::string> MimeTypes;
-void initMimetypeMap() {
+void initMimetypeMap()
+ {
     FILE *fp = fopen("../protocol/content_type.txt", "r");
 
     do {
@@ -19,9 +19,6 @@ void initMimetypeMap() {
 
     fclose(fp);
 }
-class test{
-
-};
 using namespace std;
 int main(int argc,char *argv[])
 {
@@ -76,24 +73,7 @@ int main(int argc,char *argv[])
             }
             else if((epoll_object.getevents())[i].events & EPOLLIN)//读
             {
-                // char *RECVBUF = new char[1000];
-                // if(socket_object.Recv(RECVBUF,1000,-1))
-                // {
-                    // task *ta = new task(socket_object.getconnfd());
-                    // ta();
                     pool.append(task(&socket_object));
-                        // [] (task a) { a.doit(); },
-                        // task(socket_object));
-                    // pool.append(ta);
-                // }
-                // else 
-                    // socket_object.Closeclient();
-                // delete[] RECVBUF;
-            }
-            else if((epoll_object.getevents())[i].events & EPOLLOUT)//写
-            {
-                if(socket_object.Send("1000",3))
-                    socket_object.Closeclient();
             }
         }
        
