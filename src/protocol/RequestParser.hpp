@@ -1,14 +1,16 @@
 #include<iostream>
 #include"../utils/http_parser.c"
 #include"../utils/hhtp_parser.h"
-
+#include<algorithm>
+using namespace std;
 class HttpRequestParser{
     private:
         http_parser parser;
         HttpRequest result;
+        http_parser_settings settings;
+        byte buf;
 
-    public:
-        int MeesageBegincb(http_parser * parser)//消息开始
+        int MessageBegincb(http_parser * parser)//消息开始
         {
             return 0;
         }
@@ -59,7 +61,41 @@ class HttpRequestParser{
             req->Setkeyvalue(string(key.data(),key.length()),string(p,length));
             return 0;
         }
-        
-
-
+        int Bodycb(http_parser *parser,const char *p,size_t length)
+        {
+            HttpRequest * req = reinterpret_cast<HttpRequest*>(parser->data);
+            byte *buf = new byte[length];
+            copy(p,p+length,(char *)buf);
+            req->SetBody(buf,length);
+            return 0;
+        }
+        int Urlcb(http_parser * parser,cont char *p,size_t length)
+        {
+            HttpRequest * req = reinterpret_cast<HttpRequest*>(parser->data);
+            string str = {p,length};
+            req->SetUrl(str);
+            return 0;
+        }
+    public:
+        HttpRequestParser(byte b):bug(b)
+        {
+            http_parser_init(this->parser,::HTTP_REQUEST);
+            this->parser.data = &this->result;
+            this->settings.on_message_begin = MessageBegincb;
+            this->settings.on_message_complete = MessageCompletecb;
+            this->settings.on_headers_complete = HeadersCompletecb;
+            this->settings.on_header_field = HeadersKeycb;
+            this->settings.on_header_value = HeaderValuecb；
+            this->settings.on_body = Bodycb;
+            this->settings.on_url = Urlcb;
+        }
+        HttpRequestParser operator()()
+        {
+            http_parser_execute(&this->parser,&this->settings,buf,strlen(buf));
+            if(this->parser.http_errno!=::HPE_OK)
+            {
+                this->result.SetStatus(HttpStatus::BAD_REQUEST);
+            }
+            return move(this->result);
+        }     
 };
