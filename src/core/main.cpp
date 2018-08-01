@@ -29,7 +29,7 @@ int main(int argc,char *argv[])
         return 1;
     }
     initContenttypeMap();
-    std::cout << 1 <<endl;
+    
     ServSocket socket_object;
    
 
