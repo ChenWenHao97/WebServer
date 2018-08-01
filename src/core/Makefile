@@ -5,9 +5,9 @@ LIBRARY = -lpthread
 FILE = webserver
 
 all: 
-	${CC} main.cpp -o ${FILE} ${DEBUG} ${LIBRARY}
+	${CC} main.cpp ../protocol/http_parser.c -o ${FILE} ${DEBUG} ${LIBRARY}
 release:
-	${CC} main.cpp -o ${FILE} ${RELEASE} ${LIBRARY}
+	${CC} main.cpp ../protocol/http_parser.c -o ${FILE} ${RELEASE} ${LIBRARY}
 
 
 .PHONY:clean
