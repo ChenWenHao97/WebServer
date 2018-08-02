@@ -101,9 +101,7 @@ void task::operator()()
         //     content_type = "image/png";
         // }
         // else if(endsWith(all,""))
-        
-        int type_index = all.find("Content-Type");//要找到需要的类型
-        type_index +=12;
+   
         if(method.compare("GET")==0) 
         {
         //  GET /19011.html HTTP/1.1

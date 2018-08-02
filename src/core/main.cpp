@@ -31,12 +31,11 @@ int main(int argc,char *argv[])
     initContenttypeMap();
     
     ServSocket socket_object;
-   
-
     threadpool pool(20);//线程池
     int port = atoi(argv[2]);
     string ip = argv[1];
     socket_object.Socket(port,ip);
+    socket_object.Setoptions(SO_REUSEADDR,1);//设置reuseaddr
     Epoll epoll_object(1000);
     bool a = epoll_object.Addevent(&socket_object,false);
 

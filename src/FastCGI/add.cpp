@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     int a, b;
 	char body[MAXBUFFER], content[MAXLINE];
-    int ret = sscanf(argv[1], "%d&%d", &a, &b);
+    int ret = sscanf(argv[1], "a=%d&b=%d", &a, &b);
     if(ret < 0 || ret != 2)
 	{
 	 	//设置消息体

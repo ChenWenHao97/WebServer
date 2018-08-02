@@ -1,17 +1,20 @@
 #include<iostream>
 #include<unordered_map>
-#include<string_view>
+#include"../FastCGI/fcgi.h"
+#include"../FastCGI/fcgi.c"
+#include"../FastCGI/fastcgi.h"
 using namespace std;
 using byte = unsigned char;
+
 enum class HttpMethod:int{
-    GET = 0,
-    POST ,
-    HEAD ,//只有头，没内容
-    DELETE,
-    PUT,
-    OPTIONS,//获取URL的方法
-    TRACE,
-    CONNECT,//透明tcp/ip通道
+    DELETE  = 0,
+    GET     = 1,
+    HEAD    = 2,
+    POST    = 3,
+    PUT     = 4,
+    CONNECT = 5,
+    OPTIONS = 6,
+    TRACE   = 7
 };
 enum class HttpVersion:int{
     HTTP_1_0 = 0,
@@ -26,33 +29,50 @@ enum class HttpStatus:int{
     NOT_SUPPORT = 501,
     KEEP_ALIVE = 502
 };
+
+unordered_map<HttpVersion,string> version_map {
+    {HttpVersion::HTTP_1_0, "HTTP/1.0"},
+    {HttpVersion::HTTP_1_1, "HTTP/1.1"}
+};
+
+unordered_map<HttpMethod,string> method_map {
+    {HttpMethod::GET,"GET"},
+    {HttpMethod::POST,"POST"} ,
+    {HttpMethod::HEAD,"HEAD"} ,
+    {HttpMethod::DELETE,"DELETE"},
+    {HttpMethod::PUT,"PUT"},
+    {HttpMethod::OPTIONS,"OPTIONS"},
+    {HttpMethod::TRACE,"TRACE"},
+    {HttpMethod::CONNECT,"CONNECT"}
+};
+
 class HttpRequest{
     private:
         HttpMethod method;
         HttpVersion version;
         string url;
         HttpStatus status;
-        unorder_map<string,string> key_value;
+        unordered_map<string,string> key_value;
         shared_ptr<byte> body;//body有不需要的内容，只需要转发给CGI
         int body_length;
-        string_view  KeyLength;
+        string KeyLength;
 
     public:
-        void SetKeyLength(KeyLength kl)
+        void SetKeyLength(string kl)
         {
             this->KeyLength=kl;
         }
-        string_view GetKeyLength()
+        string GetKeyLength()
         {
             return this->KeyLength;
         }
-        void SetMethod(Method m)
+        void SetMethod(HttpMethod m)
         {
             this->method = m;
         }
         void SetVersion(HttpVersion v)
         {
-            this-<version = v;
+            this->version = v;
         }
         void SetUrl(string url)
         {
@@ -64,8 +84,8 @@ class HttpRequest{
         }
         void SetBody(byte * b,int size)
         {
-            this->body = b;
-            this->body_size = size;
+            this->body.reset(b, default_delete<byte []>());
+            this->body_length = size;
         }
          void SetStatus(HttpStatus s)
         {
@@ -89,13 +109,14 @@ class HttpRequest{
         }
         string GetValue(string key)
         {
-            if(this->key_value.find(key)==key.end())
+            if(this->key_value.find(key)==this->key_value.end())
+            //map没有.end（）方法!!!!!!!!!!!!!!!!!!!!!
                 return "";//空
             return key_value[key];
         }
         byte * GetBody()
         {
-            return body;
+            return body.get();//如何返回
         }
         int GetBodySize()
         {
@@ -107,7 +128,7 @@ class HttpRespnse{
     private:
         HttpVersion version;
         HttpStatus status;
-        unorder_map<string,string> key_value;
+        unordered_map<string,string> key_value;
         shared_ptr<byte> body;//body有不需要的内容，只需要转发给CGI
         int body_length;
         // body_stream;
@@ -119,20 +140,21 @@ class HttpRespnse{
             this->status = req.GetStatus(); 
         }
 
-        void sendTo(socket skt)
-        {
-            skt.send("HTTP/1.1 ");
-            skt.send(status TOSTRING..);
-            skt.send(" DESC\r\n");
-            for (auto &i: key_value) {
-                skt.send(i.first);
-                skt.send(": ");
-                skt.send(i.second "\r\n");
-            }
-            skt.send('\r\n');
-            sendfile();
-            skt.send(body);
-        }
+        // void cgi(int connfd)
+        // {
+
+        //     skt.send("HTTP/1.1 ");
+        //     skt.send(status TOSTRING..);
+        //     skt.send(" DESC\r\n");
+        //     for (auto &i: key_value) {
+        //         skt.send(i.first);
+        //         skt.send(": ");
+        //         skt.send(i.second "\r\n");
+        //     }
+        //     skt.send('\r\n');
+        //     sendfile();
+        //     skt.send(body);
+        // }
 
         void Setkeyvalue(string key,string value)
         {
@@ -140,8 +162,8 @@ class HttpRespnse{
         }
         void SetBody(byte * b,int size)
         {
-            this->body = b;
-            this->body_size = size;
+            this->body.reset(b, default_delete<byte []>());
+            this->body_length = size;
         }
         void SetVersion(HttpVersion v)
         {
@@ -161,13 +183,13 @@ class HttpRespnse{
         }
          string GetValue(string key)
         {
-            if(this->key_value.find(key)==key.end())
+            if(this->key_value.find(key)==this->key_value.end())
                 return "";//空
             return key_value[key];
         }
         byte * GetBody()
         {
-            return body;
+            return body.get();
         }
         int GetBodySize()
         {

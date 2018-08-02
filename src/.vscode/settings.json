@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "condition_variable": "cpp",
+        "future": "cpp",
+        "unordered_map": "cpp",
+        "http_parser.c": "cpp",
+        "array": "cpp",
+        "bitset": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "*.tcc": "cpp",
+        "iostream": "cpp",
+        "ostream": "cpp",
+        "fstream": "c"
+    }
+}

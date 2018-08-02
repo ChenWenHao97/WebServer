@@ -1,24 +1,23 @@
 #include<iostream>
-#include"../utils/http_parser.c"
-#include"../utils/hhtp_parser.h"
+#include"http_parser.h"
 #include<algorithm>
 using namespace std;
-class HttpRequestParser{
+class HttpRequestParser {
     private:
         http_parser parser;
         HttpRequest result;
         http_parser_settings settings;
         byte *buf;
 
-        int MessageBegincb(http_parser * parser)//消息开始
+        static int MessageBegincb(http_parser * parser)//消息开始
         {
             return 0;
         }
-        int MessageCompletecb(http_parser * parser)//消息结束
+        static int MessageCompletecb(http_parser * parser)//消息结束
         {
             return 0;
         }
-        int HeadersCompletecb(http_parser * parser)//接受完头
+        static int HeadersCompletecb(http_parser * parser)//接受完头
         {
             HttpRequest * req = reinterpret_cast<HttpRequest *>(parser->data);
             //强制类型转换，没有位数损失
@@ -29,7 +28,7 @@ class HttpRequestParser{
                 {
                     req->SetVersion(HttpVersion::HTTP_1_1);
                 }
-                else if(parser->htto_minor == 0)
+                else if(parser->http_minor == 0)
                 {
                     req->SetVersion(HttpVersion::HTTP_1_0);
                 }
@@ -46,7 +45,7 @@ class HttpRequestParser{
             }
             return 0;
         }
-        int HeadersKeycb(http_parser *parser,const char * p,size_t length)
+        static int HeadersKeycb(http_parser *parser,const char * p,size_t length)
         {
             HttpRequest *req = reinterpret_cast<HttpRequest*>(parser->data);
             req->SetKeyLength({p,length});//因为用的map需要将键值对同时放入，所以需要先记录一次键
@@ -54,14 +53,14 @@ class HttpRequestParser{
             //加length是为了防止读取字符串读取一整行
             return 0;
         }
-        int HeaderValuecb(htto_parser * parser,const char * p,size_t length)
+        static int HeaderValuecb(http_parser * parser,const char * p,size_t length)
         {
             HttpRequest * req = reinterpret_cast<HttpRequest*>(parser->data);
             auto key = req->GetKeyLength();
             req->Setkeyvalue(string(key.data(),key.length()),string(p,length));
             return 0;
         }
-        int Bodycb(http_parser *parser,const char *p,size_t length)
+        static int Bodycb(http_parser *parser,const char *p,size_t length)
         {
             HttpRequest * req = reinterpret_cast<HttpRequest*>(parser->data);
             byte *buf = new byte[length];
@@ -69,7 +68,7 @@ class HttpRequestParser{
             req->SetBody(buf,length);
             return 0;
         }
-        int Urlcb(http_parser * parser,cont char *p,size_t length)
+        static int Urlcb(http_parser * parser,const char *p,size_t length)
         {
             HttpRequest * req = reinterpret_cast<HttpRequest*>(parser->data);
             string str = {p,length};
@@ -77,21 +76,21 @@ class HttpRequestParser{
             return 0;
         }
     public:
-        HttpRequestParser(byte *b):buf(*b)
+        HttpRequestParser(byte *b):buf(b)
         {
-            http_parser_init(this->parser,::HTTP_REQUEST);
+            http_parser_init(&this->parser,::HTTP_REQUEST);
             this->parser.data = &this->result;
             this->settings.on_message_begin = MessageBegincb;
             this->settings.on_message_complete = MessageCompletecb;
             this->settings.on_headers_complete = HeadersCompletecb;
             this->settings.on_header_field = HeadersKeycb;
-            this->settings.on_header_value = HeaderValuecb；
+            this->settings.on_header_value = HeaderValuecb;
             this->settings.on_body = Bodycb;
             this->settings.on_url = Urlcb;
         }
-        HttpRequestParser operator()()
+        HttpRequest operator()()
         {
-            http_parser_execute(&this->parser,&this->settings,buf,strlen(buf));
+            http_parser_execute(&this->parser,&this->settings,(char*)buf,strlen((char *)buf));
             if(this->parser.http_errno!=::HPE_OK)
             {
                 this->result.SetStatus(HttpStatus::BAD_REQUEST);

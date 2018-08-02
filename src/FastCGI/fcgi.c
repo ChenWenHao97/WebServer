@@ -1,10 +1,3 @@
-/*
- * @filename:    fcgi.c
- * @author:      Tanswer
- * @date:        2017年12月23日 00:00:09
- * @description:
- */
-
 #include "fastcgi.h"
 #include "fcgi.h"
 
@@ -22,7 +15,7 @@ static const int PARAMS_BUFF_LEN = 1024;    //环境参数buffer的大小
 static const int CONTENT_BUFF_LEN = 1024;   //内容buffer的大小
 
 static char *findStartHtml(char *content);
-static void getHtmlFromContent(FastCgi_t *c, char *content);
+static char* getHtmlFromContent(FastCgi_t *c, char *content);
 
 void FastCgi_init(FastCgi_t *c)
 {
@@ -145,7 +138,7 @@ void startConnect(FastCgi_t *c)
     struct sockaddr_in server_address;
     
     /* 固定 */
-    char *ip = "127.0.0.1";
+    char ip[] = "127.0.0.1";
     
     /* 获取配置文件中的ip地址 */
     //ip = getIpFromConf();
@@ -222,7 +215,7 @@ int sendEndRequestRecord(FastCgi_t *c)
     return 1;
 }
 
-int readFromPhp(FastCgi_t *c)
+char *readFromPhp(FastCgi_t *c)
 {
     FCGI_Header responderHeader;
     char content[CONTENT_BUFF_LEN];
@@ -230,12 +223,13 @@ int readFromPhp(FastCgi_t *c)
     int contentLen;
     char tmp[8];    //用来暂存padding字节
     int ret;
-
+    char *result;
     /* 先将头部 8 个字节读出来 */
     while(read(c->sockfd_, &responderHeader,FCGI_HEADER_LEN) > 0){
         if(responderHeader.type == FCGI_STDOUT){
             /* 获取内容长度 */
             contentLen = (responderHeader.contentLengthB1 << 8) + (responderHeader.contentLengthB0);
+            printf("contentlen is :%d\n",contentLen);//////////
             bzero(content, CONTENT_BUFF_LEN);
 
             /* 读取获取内容 */
@@ -243,7 +237,8 @@ int readFromPhp(FastCgi_t *c)
             assert(ret == contentLen);
 
 
-            getHtmlFromContent(c, content);
+            
+            result = getHtmlFromContent(c, content);
 
             /* 跳过填充部分 */
             if(responderHeader.paddingLength > 0){
@@ -274,7 +269,7 @@ int readFromPhp(FastCgi_t *c)
         }
     }
 
-    return 1;
+    return result;
 }
 
 char *findStartHtml(char *content)
@@ -286,20 +281,26 @@ char *findStartHtml(char *content)
     return NULL;
 }
 
-void getHtmlFromContent(FastCgi_t *c, char *content)
+char* getHtmlFromContent(FastCgi_t *c, char *content)
 {
     /* 保存html内容开始位置 */
     char *pt;
 
     /* 读取到的content是html内容 */
     if(c->flag_ == 1){
-        printf("%s",content);
+        //printf("%s",content);
+        return content;
     } else {
+        char *p = (char *)malloc(strlen(content));
+        char *t = p;
         if((pt = findStartHtml(content)) != NULL){
+        // if ((pt = content) != NULL) {
             c->flag_ = 1;
-            for(char *i = pt; *i != '\0'; i++){
-                printf("%c",*i);
+            for(char *i = pt; *i != '\0'; i++) {
+                *t++ = *i;
+                // printf("%c",*i);
             }
         }
+        return p;
     }
 }

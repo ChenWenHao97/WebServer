@@ -38,16 +38,13 @@ class ServSocket{
         bool Setoptions(int option,int value);
         bool Setconnfd(int fd);
     private:
-        string ip;
         int port;
         int sockfd;
         int connfd;
         struct sockaddr_in servaddr,cliaddr;
       
 };
-ServSocket::ServSocket():port(0),sockfd(-1),connfd(-1)
-{
-    ip = "";
+ServSocket::ServSocket():port(0),sockfd(-1),connfd(-1){
 }
 ServSocket::~ServSocket()
 {
@@ -107,7 +104,6 @@ bool ServSocket::Setoptions(int option,int value)
 }
 bool ServSocket::Socket(int port,string ip_addr)
 {
-    ip = ip_addr;
     if(port == -1)
     {
         my_err("port is wrong",__LINE__);
@@ -120,7 +116,7 @@ bool ServSocket::Socket(int port,string ip_addr)
         return false;
     }
     servaddr.sin_family = AF_INET;
-    inet_pton(AF_INET,ip.c_str(),&servaddr.sin_addr);
+    inet_pton(AF_INET,ip_addr.c_str(),&servaddr.sin_addr);
     servaddr.sin_port = htons(port);
     Setoptions(SO_REUSEADDR,1);
     Setoptions(SO_KEEPALIVE,1);//心跳包
