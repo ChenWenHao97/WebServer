@@ -1,24 +1,10 @@
-#include<iostream>
-#include"../utils/my_err.hpp"
 #include"../utils/serversocket.hpp"
 #include"../utils/threadpool.hpp"
 #include"../utils/Epoll.hpp"
 #include"../utils/task.hpp"
-#include<unordered_map>
+#include"../utils/init.hpp"
 using namespace std;
-unordered_map<string, string> ContentTypes;
-void initContenttypeMap()
- {
-    FILE *fp = fopen("../protocol/content_type.txt", "r");
-
-    do {
-        char key[20], value[50];
-        fscanf(fp, " %s %s", key, value);
-        ContentTypes[key] = value;
-    } while (!feof(fp));
-
-    fclose(fp);
-}
+extern unordered_map<string, string> ContentTypes;
 
 int main(int argc,char *argv[])
 {
@@ -28,7 +14,7 @@ int main(int argc,char *argv[])
         cout <<"usage :"<<argv[0]<<"port"<<endl;
         return 1;
     }
-    initContenttypeMap();
+    Init::initContenttypeMap();
     
     ServSocket socket_object;
     threadpool pool(20);//线程池
@@ -45,7 +31,7 @@ int main(int argc,char *argv[])
   
         if(number < 0 && errno != EINTR)
         {
-            my_err("get epoll number failed",__LINE__);
+            Init::my_err("get epoll number failed",__LINE__);
             break;
         }
        
@@ -59,7 +45,7 @@ int main(int argc,char *argv[])
                 bool connstate =  socket_object.Accept();
                 if(connstate == false)
                 {
-                  my_err("accept connstate failed",__LINE__);
+                  Init::my_err("accept connstate failed",__LINE__);
                   continue;
                 }
                 int connfd = socket_object.getconnfd();
