@@ -1,22 +1,5 @@
 #pragma once
-//#include<iostream>
-#include<cstdlib>
-#include<string>
-#include<cstring>
-//read方法需要的头文件
-#include<unistd.h>
-//socket方法需要的头文件
-#include<sys/socket.h>
-#include<sys/types.h>
-//htonl 方法需要的头文件
-#include<netinet/in.h>
-//inet_ntop方法需要的头文件
-#include<arpa/inet.h>
-#include<unistd.h>
-#include<sys/stat.h>
-#include<sys/mman.h>
-#include<fcntl.h>
-#include"my_err.hpp"
+#include"init.hpp"
 #define READ_BUFF_SIZE 640000
 #define WRITE_BUFF_SIZE 640000
 using namespace std;
@@ -50,7 +33,7 @@ ServSocket::~ServSocket()
 {
     if(!Closeserv())
     {
-        my_err("close err",__LINE__);
+        Init::my_err("close err",__LINE__);
     }
 }
 bool ServSocket::Closeclient()
@@ -106,13 +89,13 @@ bool ServSocket::Socket(int port,string ip_addr)
 {
     if(port == -1)
     {
-        my_err("port is wrong",__LINE__);
+        Init::my_err("port is wrong",__LINE__);
         return false;
     }
     sockfd = socket(PF_INET,SOCK_STREAM,0);
     if(sockfd < 0)
     {
-        my_err("create socket is wrong",__LINE__);
+        Init::my_err("create socket is wrong",__LINE__);
         return false;
     }
     servaddr.sin_family = AF_INET;
@@ -124,12 +107,12 @@ bool ServSocket::Socket(int port,string ip_addr)
 	Setoptions(SO_RCVBUF, 640000);
     if((bind(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr))) < 0)
     {
-        my_err("bind err",__LINE__);
+        Init::my_err("bind err",__LINE__);
         return  false;
     }
     if((listen(sockfd,30) < 0))
     {
-        my_err("listen err",__LINE__);
+        Init::my_err("listen err",__LINE__);
         return false;
     }
     return true;
@@ -140,7 +123,7 @@ bool ServSocket::Accept()
     socklen_t len = sizeof(cliaddr);
 	if((connfd = accept(sockfd, (struct sockaddr*)&cliaddr, &len)) <0)
 	{
-        my_err("accept err",__LINE__);
+        Init::my_err("accept err",__LINE__);
 		return false;
 	}
 	return true;
@@ -159,7 +142,7 @@ bool ServSocket::Send(const char* sendbuf,int len)
 		{
 			if(errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			{
-                my_err("send failed",__LINE__);
+                Init::my_err("send failed",__LINE__);
 				usleep(3000);//3秒
 				res = 0;
 			}
@@ -182,7 +165,7 @@ bool ServSocket::Recv(char* recvbuf,int len,int timeout)
         {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
             {
-                my_err("read failed",__LINE__);
+                Init::my_err("read failed",__LINE__);
                 return false;
             }
         }

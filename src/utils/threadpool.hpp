@@ -1,15 +1,7 @@
 //半同步半异步线程池，有主线程(epoll等)
 //领导者追随者没有主线程
 #pragma once
-#include <vector>
-#include <queue>
-#include <thread>
-#include <atomic>
-#include <condition_variable>
-#include <future>
-#include <functional>
-#include <stdexcept>
-#include<future>
+#include"init.hpp"
 using namespace std;
 
 class threadpool{
@@ -89,7 +81,6 @@ class threadpool{
                 //相当于提前给了一个参数
 
             );
-            // fprintf(stderr, "before threadpool append");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             future<T> future_results = task->get_future();
             {
                 unique_lock<mutex> lock(m_lock);
@@ -100,7 +91,6 @@ class threadpool{
                 );
             }
             condition.notify_one();//唤醒一个线程去执行
-            // fprintf(stderr, "threadpool append emplaced ok");//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             return future_results;
         }
 

@@ -24,7 +24,7 @@ Epoll::Epoll(int number)
     epfd = epoll_create(number);
     if(epfd < 0)
     {
-        my_err("create epoll err",__LINE__);
+        Init::my_err("create epoll err",__LINE__);
         return;
     }
 }
@@ -51,7 +51,7 @@ bool Epoll::Addevent(ServSocket *socket,bool oneshot)
     
     if(sockfd < 0)
     {
-        my_err("add epollevent failed",__LINE__);
+        Init::my_err("add epollevent failed",__LINE__);
         return false;
     }
 
@@ -70,7 +70,7 @@ bool Epoll::Deletevent(ServSocket *socket)
     int connfd = socket->getconnfd();
     if(connfd < 0)
     {
-        my_err("delet epollevent failed",__LINE__);
+        Init::my_err("delet epollevent failed",__LINE__);
         return false;
     }
     bool res =  (epoll_ctl(epfd,EPOLL_CTL_DEL,connfd,0) == 0);

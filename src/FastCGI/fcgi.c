@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <errno.h>
-
+#include <stdlib.h>
 
 static const int PARAMS_BUFF_LEN = 1024;    //环境参数buffer的大小
 static const int CONTENT_BUFF_LEN = 1024;   //内容buffer的大小
@@ -268,7 +268,6 @@ char *readFromPhp(FastCgi_t *c)
             assert(ret == sizeof(endRequest));
         }
     }
-
     return result;
 }
 
@@ -293,6 +292,7 @@ char* getHtmlFromContent(FastCgi_t *c, char *content)
     } else {
         char *p = (char *)malloc(strlen(content));
         char *t = p;
+        
         if((pt = findStartHtml(content)) != NULL){
         // if ((pt = content) != NULL) {
             c->flag_ = 1;
@@ -300,6 +300,8 @@ char* getHtmlFromContent(FastCgi_t *c, char *content)
                 *t++ = *i;
                 // printf("%c",*i);
             }
+            *t = '\0';
+            
         }
         return p;
     }

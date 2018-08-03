@@ -1,31 +1,16 @@
 #pragma once
-#include<iostream>
-#include<string>
-#include<sys/socket.h>
-#include<sys/types.h>
-#include<netinet/in.h>
-#include<arpa/inet.h>
-#include<unistd.h>
-#include<errno.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<sys/sendfile.h>
-#include<sys/wait.h>
-#include<istream>
 #include"serversocket.hpp"
-#include"my_err.hpp"
 #include"../protocol/Httphead.hpp"
 #include"../protocol/RequestParser.hpp"
 #include"../protocol/http_parser.h"
-#include<sstream>
-#include <regex>
-#include <unordered_map>
+#include"../utils/init.hpp"
 using namespace std;
 extern unordered_map<string,string> ContentTypes;
 extern unordered_map<HttpVersion,string> version_map;
 extern unordered_map<HttpMethod,string> method_map;
 using byte = unsigned char;//流
 string PATH("/home/cwh/WebServer/src/wwwroot");
+//默认wwwroot为根
 string ok_200_title = "OK";
 string error_400_title = "Bad Request";
 string error_400_form = "Your request has bad syntax or is inherently impossible to satisfy.\n";
@@ -35,13 +20,9 @@ string error_404_title = "Not Found";
 string error_404_form = "thr requested file was not found on this server.\n";
 string error_500_title = "Internal Error";
 string error_500_form = "There was an unusal problem serving the requested file.\n";
-//默认wwwroot为根
 
-int endsWith(string s,string sub)//从尾部开始查找
-{
-    return s.rfind(sub)==(s.length()-sub.length())?1:0;
-    //长字符串减去短字符串就是对应的索引，从右边开始查找
-}
+
+
 class task{
     private:
         int connfd;
@@ -71,8 +52,12 @@ char * task::fastcgi(FastCgi_t *c,string filename,char * method,HttpRequest req)
 
     sendParams(c, "SCRIPT_FILENAME", const_cast<char *>(filename.data()));
     sendParams(c, "REQUEST_METHOD",  method);//const_cast<char *>(method.data()));
-    sendParams(c, "CONTENT_LENGTH", (char *)to_string(req.GetBodySize()).c_str());
-    sendParams(c, "CONTENT_TYPE", (char *)req.GetValue("Content-Type").c_str());
+    if(req.GetBodySize()!=-1)//只有post请求需要body
+    {
+        sendParams(c, "CONTENT_LENGTH", (char *)to_string(req.GetBodySize()).c_str());
+        sendParams(c, "CONTENT_TYPE", (char *)req.GetValue("Content-Type").c_str());
+    }
+    
     sendEndRequestRecord(c);
     if(req.GetBodySize()!=-1)
     {
@@ -84,7 +69,6 @@ char * task::fastcgi(FastCgi_t *c,string filename,char * method,HttpRequest req)
         //说明body发完了
         send(c->sockfd_, &t, sizeof(t), 0);
     }
-    // dup2(STDOUT_FILENO,connfd);//将输出直接在页面显示
     char * html = readFromPhp(c);
     FastCgi_finit(c);
     return html;
@@ -92,7 +76,7 @@ char * task::fastcgi(FastCgi_t *c,string filename,char * method,HttpRequest req)
 
 void task::operator()()
 {
-    cout << "START!" << endl;////////////
+
     byte temp[1000];
     int size;
     size = read(connfd,temp,sizeof(temp));
@@ -105,15 +89,22 @@ void task::operator()()
     if(size > 0)
     {
         string content_type = "text/html";
-     
-        for (auto &i: ContentTypes) 
+        struct stat filestat;
+        int ret = stat((PATH+filename).c_str(),&filestat);//判断文件
+        if(ret > 0 && !S_ISDIR(filestat.st_mode))//文件不存在
         {
-            if (endsWith(filename, i.first)) 
+            for (auto &i: ContentTypes) 
             {
-                content_type = i.second;
-                break;
+                if (Init::endsWith(filename, i.first)) 
+                {
+                    cout << "<<Match>> [" << filename << "] with pattern ["
+                        << i.first << "] -> [" << i.second << "]\n" ;
+                    content_type = i.second;
+                    break;
+                }
             }
         }
+        
         
         switch (method)
         {
@@ -154,26 +145,11 @@ void task::response_get(string filename,string content_type,HttpRequest req)
     cout<<"GET!!!"<<endl;//////////////
     string full_path;
     full_path = PATH;
+    string title = ok_200_title;
     int status = 200;//初始化状态码200
     bool is_dynamic = false;//网页是否是动态，加没加？
 
-    FILE * fp =  fopen("/etc/my_cgi.txt","r");//匹配动态的规则
-    if(fp == NULL)
-    {
-        my_err("open cgi.text failed",__LINE__);
-    }
-    char * rule = new char[512]; //记得delete
-    fgets(rule,512,fp);
-    fclose(fp);
-    rule[strlen(rule) - 1] = '\0';
-    cout <<"filename is:"<<filename<<endl;
-    regex reg(rule);//正则匹配
-    if (regex_match(filename, reg))
-    {
-        is_dynamic = true;
-        cout <<endl;
-    }
-
+    is_dynamic = Init::MatchCGI((char*)filename.c_str());
     full_path += filename;
     if(filename[filename.size()-1]=='/')
         full_path += "index.html";
@@ -184,9 +160,11 @@ void task::response_get(string filename,string content_type,HttpRequest req)
     int ret = stat(full_path.c_str(),&filestat);//判断文件
     if(ret < 0 || S_ISDIR(filestat.st_mode))//文件不存在
     {
+        cout << "=======NOT FOUND" << endl;
         full_path = PATH + "/404.html";//只需要将状态改变即可
         stat(full_path.c_str(), &filestat);
         status = 404;
+        title = error_404_title;
     }
     if(is_dynamic)
     {
@@ -198,15 +176,16 @@ void task::response_get(string filename,string content_type,HttpRequest req)
         // }
         // wait(NULL);//等待子进程退出
 
-        cout <<endl;/////////////
-        cout <<"dynamic!!!!!!!!"<<endl;//////////
+        // cout <<endl;/////////////
+        // cout <<"dynamic!!!!!!!!"<<endl;//////////
+
         //fastcgi
         FastCgi_t * c;
        
         char *html = fastcgi(c,full_path,"GET",req);
-        cout <<"html:"<<endl;//////////////
-        cout <<html<<endl;///////////
-        response(full_path,ok_200_title,status,strlen(html),content_type);
+        // cout <<"html:"<<endl;//////////////
+        // cout <<html<<endl;///////////
+        response(full_path,title,status,strlen(html),content_type);
         int sended = 0;
         while (sended != strlen(html)) 
         {
@@ -222,12 +201,12 @@ void task::response_get(string filename,string content_type,HttpRequest req)
         // cout <<"file:size->"<<filestat.st_size<<endl;//////////////
         if(filefd < 0)
         {
-            my_err("open full_path failed",__LINE__);
+            Init::my_err("open full_path failed",__LINE__);
             return;
         }
         else
         {
-            response(full_path,ok_200_title,status,filestat.st_size,content_type);//文件的大小和状态码
+            response(full_path,title,status,filestat.st_size,content_type);//文件的大小和状态码
 
             ssize_t sended = 0;
             while (sended != filestat.st_size) 
@@ -244,14 +223,13 @@ void task::response_post(string filename,string content_type,HttpRequest req)
 {
     
     cout <<"POST!!!"<<endl;////////////
-    // string full_path = "/home/cwh/WebServer/src/FastCGI"+filename; 
     string full_path = PATH + filename;
     FastCgi_t * c;
     byte * body = req.GetBody();
 
     char *html = fastcgi(c,full_path,"POST",req);
-    cout <<"html:"<<endl;//////////////
-    cout <<html<<endl;///////////
+    // cout <<"html:"<<endl;//////////////
+    // cout <<html<<endl;///////////
     response(full_path,ok_200_title,200,strlen(html),content_type);
     int sended = 0;
     while (sended != strlen(html)) 
@@ -271,5 +249,4 @@ void task::response_post(string filename,string content_type,HttpRequest req)
 	// 	execl(full_path.c_str(), argv); //执行子程序
 	// }
 	// wait(NULL);
-
 }
