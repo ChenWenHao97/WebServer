@@ -7,6 +7,7 @@
 ④socket的知识</br>
 ⑤基本的html书写</br>
 ⑥基本的php书写
+⑦基本的makefile的书写
 
 ### 使用的库和工具
 ①webbench</br>

@@ -1,10 +1,3 @@
-/*
- * @filename:    main.c
- * @author:      Tanswer
- * @date:        2017年12月23日 01:44:32
- * @description:
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "fcgi.h"
