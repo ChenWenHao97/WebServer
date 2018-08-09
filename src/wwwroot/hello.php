@@ -1,7 +1,7 @@
 <html>
 <body>
 <?php
-echo 'abc';
+echo 'hello,world';
 ?>
 </body>
 </html>

@@ -111,6 +111,6 @@ typedef struct
     FCGI_Header header;
     FCGI_UnknownTypeBody body;
 }FCGI_UnKnownTypeRecord;
-
+char *findStartHtml(char *content);
 
 #endif
