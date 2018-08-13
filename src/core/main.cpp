@@ -6,6 +6,7 @@
 using namespace std;
 extern unordered_map<string, string> ContentTypes;
 
+
 int main(int argc, char *argv[])
 {
 
@@ -61,8 +62,9 @@ int main(int argc, char *argv[])
             }
             else if ((epoll_object.getevents())[i].events & EPOLLIN) //读
             {
-          
+                // pool.append(doPost, 1, 2);
                 pool.append(task(&socket_object));
+
             }
         }
     }

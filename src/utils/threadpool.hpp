@@ -31,11 +31,11 @@ class threadpool
                         //获取一个待执行的task
 
                         unique_lock<mutex> lock(this->m_lock); //加锁
-                        this->condition.wait(lock,
+                        this->condition.wait(lock,//条件变量
                                              [this] {
                                                  return (this->stopped).load() ||
                                                         !(this->tasks).empty();
-                                             });
+                                             });//return false才阻塞
                         if ((this->stopped).load() && (this->tasks).empty())
                             //停止和队列为空就结束
                             return;
@@ -69,23 +69,22 @@ class threadpool
         if (stopped.load())
             throw runtime_error("append threadpool is closed");
         using T = decltype(f(args...));
-        auto task = make_shared<packaged_task<T()>>(
+        auto task = make_shared<packaged_task<T()> >(//实现无参函数
             //返回智能指针
             //T只是返回值，（）代表不需要额外参数，变参必须都给
-
+            //如果是值类型，最后就会销毁
             bind(forward<Function>(f), forward<Args>(args)...)
             //参数预绑定，同时不改变左右值
             //相当于提前给了一个参数
 
         );
         future<T> future_results = task->get_future();
-        {
-            unique_lock<mutex> lock(m_lock);
-            tasks.emplace(
-                [task] {
-                    (*task)();
-                });
-        }
+        //拿到返回值
+        unique_lock<mutex> lock(m_lock);
+        tasks.emplace(
+            [task] {//捕获列表，才可以使用
+                (*task)();//引用计数加1
+            });
         condition.notify_one(); //唤醒一个线程去执行
         return future_results;
     }

@@ -78,9 +78,9 @@ char *task::fastcgi(FastCgi_t *c, string filename, char *method, HttpRequest req
     {
         // templen = 0;
         char *temp = readFromPhp(c, len);
-        cout << "\n len:" << *len << endl;
+        // cout << "\n len:" << *len << endl;
 
-        cout << "\ntemp:" << temp << endl;
+        // cout << "\ntemp:" << temp << endl;
         cout.clear();
 
         if (*len != 0 && flag)
@@ -245,6 +245,7 @@ void task::response_get(string filename, string content_type, HttpRequest req)
             sended += ret;
         }
         free(fullresult); //虽然之前动态分配了，不断通过拷贝来到这里，
+        // free(html);//free的指针地方不对，就会出现非常严重的错误
         //但是释放内存的时候是根据地址进行释放，所以同样有效
     }
     else
